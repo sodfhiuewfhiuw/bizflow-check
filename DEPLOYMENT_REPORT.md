@@ -4,6 +4,8 @@
 
 ## 快速預覽
 
+- GitHub Pages：https://sodfhiuewfhiuw.github.io/bizflow-check/
+- GitHub Repo：https://github.com/sodfhiuewfhiuw/bizflow-check
 - here.now：https://tawny-bridge-ac9v.here.now/
 - Claim URL：https://here.now/claim?slug=tawny-bridge-ac9v&token=91a4400c477c4467986ea1d08b8eae68e5f91060e45e192559a03018c7de8335
 - 狀態：匿名發布，24 小時內可用 Claim URL 認領成永久站點。
@@ -17,6 +19,7 @@
 
 - `npm run smoke`：PASS
 - 遠端頁面可開：PASS
+- GitHub Pages 正式耐久公開網址：PASS
 - 遠端互動測試：填入示範資料 → 產生健檢結果 → 顯示優先建議 / CTA / fallback 摘要：PASS
 - localStorage lead preview 寫入：PASS
 

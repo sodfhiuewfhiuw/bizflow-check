@@ -120,6 +120,10 @@
     .ai-report h3{margin:0 0 8px;font-size:20px}.ai-report ul{margin:8px 0 0;padding-left:20px}.ai-status{color:var(--muted);font-size:13px;margin-top:8px}
     .lead-preview{margin-top:16px;border:1px solid rgba(100,228,255,.22);background:rgba(100,228,255,.055);border-radius:18px;padding:14px;color:var(--muted)}
     .lead-preview strong{color:var(--text)}
+    .conversion-panel{margin-top:16px;border:1px solid rgba(130,240,184,.34);background:linear-gradient(135deg,rgba(130,240,184,.1),rgba(100,228,255,.055));border-radius:24px;padding:18px}
+    .conversion-panel h3{margin:0 0 8px;font-size:22px}.conversion-panel p{margin:0 0 12px;color:var(--soft)}
+    .ux-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}.ux-step{border:1px solid var(--line);background:rgba(255,255,255,.045);border-radius:16px;padding:10px;color:var(--muted);font-size:13px}.ux-step strong{display:block;color:var(--text);font-size:14px}
+    .lead-capture-form{display:grid;gap:12px;margin-top:14px}.lead-success{display:none;margin-top:14px;border:1px solid rgba(130,240,184,.42);background:rgba(130,240,184,.1);border-radius:18px;padding:14px;color:var(--soft)}.lead-success.active{display:block}.handoff-note{font-size:13px;color:var(--muted);margin-top:10px}
     .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;background:#111b2a;border:1px solid rgba(130,240,184,.35);color:var(--text);border-radius:999px;padding:10px 14px;box-shadow:var(--shadow);z-index:70;transition:.18s opacity,.18s transform}
     .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
     .timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
@@ -135,7 +139,7 @@
     .modal-card h3{margin:0 0 8px;font-size:28px}
     .small{font-size:13px;color:var(--muted)}
     @media (max-width:900px){
-      .hero,.checker{grid-template-columns:1fr}.cards,.axis-grid,.timeline,.pricing,.report-blocks{grid-template-columns:1fr}.grid2,.checks{grid-template-columns:1fr}.risk-strip{grid-template-columns:1fr 1fr}.nav-links a:not(.keep){display:none}.hero{padding-top:46px} .total{align-items:flex-start;flex-direction:column}.total-num{font-size:52px}
+      .hero,.checker{grid-template-columns:1fr}.cards,.axis-grid,.timeline,.pricing,.report-blocks,.ux-steps{grid-template-columns:1fr}.grid2,.checks{grid-template-columns:1fr}.risk-strip{grid-template-columns:1fr 1fr}.nav-links a:not(.keep){display:none}.hero{padding-top:46px} .total{align-items:flex-start;flex-direction:column}.total-num{font-size:52px}
     }
   </style>
 </head>
@@ -462,6 +466,7 @@ function render(data, s){
   const lists=automationLists(data,s);
   const riskLevels = [0,1,2,3,4].map(i=>`<div class="risk-level ${i===s.level?'active':''}">${riskLabel(i)}</div>`).join('');
   const recs = recommendations(data,s).map(([cls,t,b])=>`<div class="rec ${cls}"><strong>${t}</strong><span>${b}</span></div>`).join('');
+  const conversionPanel = renderConversionPanel(data,s);
   const canItems=lists.can.map(x=>`<li>${x}</li>`).join('');
   const avoidItems=lists.avoid.map(x=>`<li>${x}</li>`).join('');
   const tags=riskTags(data).map(x=>`<span class="pill">${x}</span>`).join('') || '<span class="pill">低風險</span>';
@@ -482,14 +487,16 @@ function render(data, s){
       <div class="report-block"><h3>不建議直接自動化</h3><ul>${avoidItems}</ul></div>
     </div>
     <div class="offer"><span class="badge">建議 CTA</span><h3 style="margin:10px 0 6px">${offerTitle}</h3><p style="margin:0;color:var(--soft)">${offerText}</p><div class="pill-row"><span class="pill">人工審核</span><span class="pill">保留來源</span><span class="pill">先匯出/複製，不自動發送</span>${tags}</div></div>
+    ${conversionPanel}
     <div id="aiReport" class="ai-report"><h3>AI 顧問摘要</h3><p>正在產生產業化摘要；若尚未部署 API，會維持規則式報告。</p><div class="ai-status">規則式分數仍是判斷來源，AI 只做說法潤飾。</div></div>
-    <div class="report-actions"><button class="btn" type="button" onclick="openDetail('預約流程盤點','正式版這裡可接 Calendly、Google Form 或 LINE OA。先收需求，不急著做金流。')">預約流程盤點</button><button class="btn secondary" type="button" onclick="openDetail('完整報告','正式版可要求 email，寄出完整 PDF / HTML 報告，並同步進 review queue。')">留下聯絡方式拿完整報告</button><button class="btn secondary" type="button" id="copyReport">複製報告</button><button class="btn secondary" type="button" id="downloadJson">匯出 JSON</button><button class="btn secondary" type="button" id="printReport">列印 / 存 PDF</button></div>
+    <div class="report-actions"><button class="btn secondary" type="button" id="copyReport">複製報告</button><button class="btn secondary" type="button" id="downloadJson">匯出 JSON</button><button class="btn secondary" type="button" id="printReport">列印 / 存 PDF</button></div>
   `;
   bindReportActions(data,s);
   renderLeadPreview(data,s);
   enrichWithAI(data,s);
 }
 let lastAssessment=null;
+const LEAD_DELIVERY_EMAIL = '';
 function showToast(text){const t=document.getElementById('toast');t.textContent=text;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}
 function plainReport(data,s){
   const [offerTitle,offerText]=offer(s);
@@ -504,6 +511,69 @@ function saveLocalLead(data,s){
     list.unshift(item);
     localStorage.setItem('bizflow_leads',JSON.stringify(list.slice(0,20)));
   }catch(e){console.warn('local lead save skipped',e)}
+}
+function renderConversionPanel(data,s){
+  const [offerTitle]=offer(s);
+  const contact=escapeHtml(data.contact || '');
+  const checked=data.appointment ? 'checked' : '';
+  return `<div id="conversionPanel" class="conversion-panel">
+    <span class="badge">下一步 UX 閉環</span>
+    <h3>把這份健檢轉成一筆可追蹤需求</h3>
+    <p>留下聯絡方式與期待回覆方式，系統會建立諮詢摘要、儲存到本機 submissions，並提供複製/寄送交接稿。靜態版不假裝有後端，先把轉換路徑做完整。</p>
+    <div class="ux-steps">
+      <div class="ux-step"><strong>1. 確認需求</strong>分數、風險與建議方案已產生。</div>
+      <div class="ux-step"><strong>2. 留下聯絡</strong>Email / LINE OA / 電話擇一。</div>
+      <div class="ux-step"><strong>3. 送出摘要</strong>複製或 mailto 交給服務者，後續接 Sheet/Supabase。</div>
+    </div>
+    <form id="leadCaptureForm" class="lead-capture-form">
+      <div class="grid2">
+        <div><label for="leadContact">回覆聯絡方式</label><input id="leadContact" placeholder="email / LINE OA / 電話" value="${contact}" required /></div>
+        <div><label for="preferredChannel">偏好回覆方式</label><select id="preferredChannel"><option>Email</option><option>LINE 官方帳號</option><option>電話</option><option>先用文字回覆</option></select></div>
+      </div>
+      <div class="grid2">
+        <div><label for="leadUrgency">希望處理時間</label><select id="leadUrgency"><option>一週內想先聊</option><option>本月內評估</option><option>只是先拿報告</option><option>有急件，需要優先回覆</option></select></div>
+        <div><label for="leadOffer">想了解方案</label><input id="leadOffer" value="${escapeHtml(offerTitle)}" /></div>
+      </div>
+      <label class="check"><input type="checkbox" id="leadConsent" required ${checked}> 我同意送出公司/品牌層級資訊作為流程健檢聯繫，不包含自然人個資反查或自動私訊需求。</label>
+      <div class="report-actions"><button class="btn" type="submit" id="submitLead">送出諮詢需求</button><button class="btn secondary" type="button" id="copyLeadBrief">複製諮詢摘要</button></div>
+      <div id="leadSuccess" class="lead-success"></div>
+      <div class="handoff-note">目前 GitHub Pages 是靜態版：會先儲存在本機並產生交接稿；正式營運版可把同一份 payload 接到 Google Sheet、Supabase 或 webhook。</div>
+    </form>
+  </div>`;
+}
+function leadBriefText(extra={}){
+  if(!lastAssessment) return '';
+  const data={...lastAssessment.data, contact:extra.contact || lastAssessment.data.contact};
+  const s=lastAssessment.score;
+  const summary=leadSummary(data,s);
+  return `【BizFlow Check 諮詢需求】\n公司：${summary.companyName || '未填'}\n網址：${summary.companyUrl}\n產業：${summary.industry}\n聯絡：${summary.contact || '未填'}\n偏好回覆：${extra.channel || '未填'}\n急迫性：${extra.urgency || '未填'}\n想了解方案：${extra.offer || summary.recommendedOffer}\n分數：總分 ${summary.scores.total}｜BDS ${summary.scores.bds}｜OPS ${summary.scores.ops}｜DFS ${summary.scores.dfs}\n部署：${summary.deploymentLevel}\n風險：${summary.riskTags.join('、') || '低風險'}\n流程：${summary.processText}\n\n合規聲明：只做公司/品牌層級流程健檢，不做自然人個資反查、不自動私訊或群發。`;
+}
+async function copyLeadBrief(extra={}){
+  const text=leadBriefText(extra);
+  try{await navigator.clipboard.writeText(text);showToast('已複製諮詢摘要');}
+  catch(e){openDetail('諮詢摘要',text)}
+}
+function submitLeadCapture(e){
+  e.preventDefault();
+  if(!lastAssessment) return;
+  const extra={
+    contact:document.getElementById('leadContact').value.trim(),
+    channel:document.getElementById('preferredChannel').value,
+    urgency:document.getElementById('leadUrgency').value,
+    offer:document.getElementById('leadOffer').value.trim()
+  };
+  const payload={...leadSummary({...lastAssessment.data, contact:extra.contact}, lastAssessment.score), preferredChannel:extra.channel, urgency:extra.urgency, requestedOffer:extra.offer, status:'ready_for_review', submittedAt:new Date().toISOString()};
+  try{
+    const list=JSON.parse(localStorage.getItem('bizflow_submissions')||'[]');
+    list.unshift(payload);
+    localStorage.setItem('bizflow_submissions',JSON.stringify(list.slice(0,50)));
+  }catch(err){console.warn('submission save skipped',err)}
+  const success=document.getElementById('leadSuccess');
+  const mailto=LEAD_DELIVERY_EMAIL ? `<a class="btn secondary" href="mailto:${LEAD_DELIVERY_EMAIL}?subject=${encodeURIComponent('BizFlow Check 諮詢需求｜'+(payload.companyName||payload.industry))}&body=${encodeURIComponent(leadBriefText(extra))}">用 Email 送出</a>` : '';
+  success.classList.add('active');
+  success.innerHTML=`<strong>已建立諮詢需求。</strong><br>狀態：ready_for_review｜建議方案：${escapeHtml(payload.requestedOffer)}｜回覆方式：${escapeHtml(payload.preferredChannel)}<br><span class="small">靜態版已存到本機 submissions；請按「複製諮詢摘要」交給服務者。接上後端後，這裡會直接寫入 Sheet/Supabase 並通知包子。</span><div class="report-actions"><button class="btn secondary" type="button" onclick="copyLeadBrief(${JSON.stringify(extra).replace(/"/g,'&quot;')})">複製交接稿</button>${mailto}</div>`;
+  copyLeadBrief(extra);
+  showToast('諮詢需求已建立');
 }
 async function copyReport(){
   if(!lastAssessment) return;
@@ -521,6 +591,13 @@ function bindReportActions(data,s){
   document.getElementById('copyReport').onclick=copyReport;
   document.getElementById('downloadJson').onclick=downloadJson;
   document.getElementById('printReport').onclick=()=>window.print();
+  document.getElementById('leadCaptureForm').onsubmit=submitLeadCapture;
+  document.getElementById('copyLeadBrief').onclick=()=>copyLeadBrief({
+    contact:document.getElementById('leadContact').value.trim(),
+    channel:document.getElementById('preferredChannel').value,
+    urgency:document.getElementById('leadUrgency').value,
+    offer:document.getElementById('leadOffer').value.trim()
+  });
   saveLocalLead(data,s);
 }
 function renderLeadPreview(data,s){

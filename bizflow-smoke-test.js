@@ -16,7 +16,16 @@ const mustContain = [
   'function saveLocalLead',
   'function copyReport',
   'async function enrichWithAI',
-  'let lastAssessment'
+  'let lastAssessment',
+  'id="conversionPanel"',
+  'id="leadCaptureForm"',
+  'id="submitLead"',
+  'id="leadSuccess"',
+  'id="copyLeadBrief"',
+  'function renderConversionPanel',
+  'function submitLeadCapture',
+  'function leadBriefText',
+  'bizflow_submissions'
 ];
 for (const token of mustContain) {
   if (!html.includes(token)) throw new Error(`missing token: ${token}`);

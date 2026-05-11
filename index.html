@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BizFlow Check｜小公司 AI 業務與流程自動化健檢</title>
+  <meta name="description" content="輸入公司網址與流程描述，快速評估業務開發成熟度、內部流程自動化度、部署可行性，判斷哪些流程值得自動化、哪些不該自動化。" />
+  <style>
+    :root{
+      --bg:#080b12;
+      --panel:#101723;
+      --panel2:#121c2b;
+      --line:rgba(255,255,255,.1);
+      --text:#eef4ff;
+      --muted:#9fb0c8;
+      --soft:#d6e4ff;
+      --cyan:#64e4ff;
+      --green:#82f0b8;
+      --amber:#ffd166;
+      --red:#ff7a90;
+      --purple:#a88bff;
+      --shadow:0 24px 80px rgba(0,0,0,.45);
+      --radius:24px;
+      --max:1180px;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","PingFang TC","Microsoft JhengHei",Arial,sans-serif;
+      background:
+        radial-gradient(circle at 15% 8%, rgba(100,228,255,.25), transparent 30%),
+        radial-gradient(circle at 80% 2%, rgba(168,139,255,.2), transparent 32%),
+        radial-gradient(circle at 65% 75%, rgba(130,240,184,.12), transparent 28%),
+        var(--bg);
+      line-height:1.65;
+    }
+    a{color:inherit;text-decoration:none}
+    .nav{
+      position:sticky;top:0;z-index:20;
+      backdrop-filter:blur(18px);
+      background:rgba(8,11,18,.72);
+      border-bottom:1px solid var(--line);
+    }
+    .nav-inner{max-width:var(--max);margin:auto;display:flex;align-items:center;justify-content:space-between;padding:14px 22px;gap:16px}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.3px}
+    .brand-mark{width:34px;height:34px;border-radius:12px;background:linear-gradient(135deg,var(--cyan),var(--green));display:grid;place-items:center;color:#061018;font-weight:1000;box-shadow:0 0 30px rgba(100,228,255,.35)}
+    .nav-links{display:flex;gap:10px;align-items:center;flex-wrap:wrap;color:var(--muted);font-size:14px}
+    .nav-links a{padding:8px 10px;border-radius:999px}
+    .nav-links a:hover{background:rgba(255,255,255,.06);color:var(--text)}
+    .btn{border:0;border-radius:999px;padding:12px 18px;font-weight:800;cursor:pointer;color:#061018;background:linear-gradient(135deg,var(--cyan),var(--green));box-shadow:0 10px 28px rgba(100,228,255,.24);transition:.18s transform,.18s opacity,.18s box-shadow;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+    .btn:hover{transform:translateY(-1px);box-shadow:0 14px 34px rgba(100,228,255,.32)}
+    .btn.secondary{background:rgba(255,255,255,.08);color:var(--text);box-shadow:none;border:1px solid var(--line)}
+    .btn.warn{background:linear-gradient(135deg,var(--amber),#ff9f1c);color:#171003}
+    .btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+    .wrap{max-width:var(--max);margin:auto;padding:0 22px}
+    .hero{padding:78px 0 44px;display:grid;grid-template-columns:1.05fr .95fr;gap:32px;align-items:center}
+    .eyebrow{display:inline-flex;gap:8px;align-items:center;color:var(--green);font-weight:900;border:1px solid rgba(130,240,184,.28);background:rgba(130,240,184,.08);padding:7px 12px;border-radius:999px;font-size:14px}
+    h1{font-size:clamp(38px,7vw,76px);line-height:1.02;margin:18px 0 18px;letter-spacing:-2px}
+    .gradient{background:linear-gradient(135deg,#fff,var(--cyan) 42%,var(--green));-webkit-background-clip:text;background-clip:text;color:transparent}
+    .lead{font-size:clamp(18px,2.2vw,24px);color:var(--soft);margin:0 0 26px;max-width:720px}
+    .hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+    .mini-note{color:var(--muted);font-size:14px;display:flex;gap:12px;flex-wrap:wrap}
+    .mini-note span{display:inline-flex;align-items:center;gap:6px}
+    .hero-card{background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.04));border:1px solid var(--line);border-radius:32px;padding:22px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+    .hero-card:before{content:"";position:absolute;inset:-1px;background:radial-gradient(circle at 20% 0%,rgba(100,228,255,.2),transparent 35%);pointer-events:none}
+    .score-preview{position:relative;display:grid;gap:14px}
+    .preview-top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
+    .score-big{font-size:58px;font-weight:1000;line-height:1;color:var(--green)}
+    .badge{display:inline-flex;border:1px solid var(--line);background:rgba(255,255,255,.06);border-radius:999px;padding:6px 10px;color:var(--muted);font-size:13px;font-weight:800}
+    .axis{background:rgba(8,11,18,.42);border:1px solid var(--line);border-radius:18px;padding:15px}
+    .axis-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;font-weight:900}
+    .bar{height:10px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
+    .bar span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--cyan),var(--green));width:60%}
+    .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:28px 0}
+    .card{background:rgba(255,255,255,.055);border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:0 18px 50px rgba(0,0,0,.22)}
+    .card h3{margin:0 0 8px;font-size:21px}
+    .card p{margin:0;color:var(--muted)}
+    section{padding:48px 0}
+    .section-head{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:22px}
+    .section-head h2{font-size:clamp(28px,4vw,44px);line-height:1.1;margin:0;letter-spacing:-1px}
+    .section-head p{margin:0;color:var(--muted);max-width:560px}
+    .checker{display:grid;grid-template-columns:.95fr 1.05fr;gap:20px;align-items:start}
+    .form-panel,.result-panel{background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.035));border:1px solid var(--line);border-radius:30px;padding:22px;box-shadow:var(--shadow)}
+    label{display:block;font-weight:850;margin:14px 0 7px;color:#f6f9ff}
+    input,select,textarea{width:100%;border:1px solid rgba(255,255,255,.14);border-radius:16px;background:rgba(5,8,14,.72);color:var(--text);padding:13px 14px;font:inherit;outline:none}
+    textarea{min-height:118px;resize:vertical}
+    input:focus,select:focus,textarea:focus{border-color:rgba(100,228,255,.65);box-shadow:0 0 0 4px rgba(100,228,255,.1)}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .checks{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+    .check{display:flex;gap:9px;align-items:flex-start;border:1px solid var(--line);background:rgba(255,255,255,.04);border-radius:16px;padding:10px;color:var(--soft);font-size:14px;cursor:pointer}
+    .check input{width:auto;margin-top:5px}
+    .risk-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0}
+    .risk-level{border:1px solid var(--line);background:rgba(255,255,255,.04);border-radius:16px;padding:10px;text-align:center;color:var(--muted);font-size:12px;font-weight:800}
+    .risk-level.active{background:rgba(255,209,102,.14);border-color:rgba(255,209,102,.55);color:#ffe6a8}
+    .loading{display:none;border:1px solid rgba(100,228,255,.22);background:rgba(100,228,255,.06);border-radius:20px;padding:16px;margin-bottom:16px}
+    .loading.active{display:block}
+    .dots:after{content:"";animation:dots 1.1s infinite}
+    @keyframes dots{0%{content:""}33%{content:"."}66%{content:".."}100%{content:"..."}}
+    .result-empty{color:var(--muted);border:1px dashed rgba(255,255,255,.2);border-radius:22px;padding:28px;text-align:center}
+    .result{display:none}.result.active{display:block}
+    .total{display:flex;align-items:center;justify-content:space-between;gap:18px;border:1px solid rgba(130,240,184,.25);background:rgba(130,240,184,.07);border-radius:24px;padding:18px;margin-bottom:16px}
+    .total-num{font-size:60px;font-weight:1000;color:var(--green);line-height:1}
+    .axis-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}
+    .metric-list{display:grid;gap:9px;margin-top:10px}
+    .metric{display:flex;justify-content:space-between;gap:12px;font-size:14px;color:var(--muted);border-top:1px solid rgba(255,255,255,.08);padding-top:8px}
+    .recommendations{display:grid;gap:10px;margin-top:16px}
+    .rec{border-left:4px solid var(--cyan);background:rgba(255,255,255,.045);border-radius:16px;padding:13px}
+    .rec strong{display:block;margin-bottom:3px}
+    .rec.high{border-color:var(--red)}.rec.mid{border-color:var(--amber)}.rec.good{border-color:var(--green)}
+    .pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .pill{border:1px solid var(--line);background:rgba(255,255,255,.05);border-radius:999px;padding:6px 10px;color:var(--muted);font-size:13px;font-weight:750}
+    .offer{border:1px solid rgba(168,139,255,.35);background:rgba(168,139,255,.08);border-radius:22px;padding:16px;margin-top:16px}
+    .report-blocks{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+    .report-block{border:1px solid var(--line);background:rgba(255,255,255,.045);border-radius:18px;padding:14px}
+    .report-block h3{margin:0 0 8px;font-size:18px}.report-block ul{margin:0;padding-left:20px;color:var(--soft)}
+    .report-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.report-actions .btn{padding:10px 14px;font-size:14px}
+    .ai-report{margin-top:16px;border:1px solid rgba(130,240,184,.28);background:linear-gradient(135deg,rgba(130,240,184,.08),rgba(100,228,255,.06));border-radius:20px;padding:16px;color:var(--soft)}
+    .ai-report h3{margin:0 0 8px;font-size:20px}.ai-report ul{margin:8px 0 0;padding-left:20px}.ai-status{color:var(--muted);font-size:13px;margin-top:8px}
+    .lead-preview{margin-top:16px;border:1px solid rgba(100,228,255,.22);background:rgba(100,228,255,.055);border-radius:18px;padding:14px;color:var(--muted)}
+    .lead-preview strong{color:var(--text)}
+    .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;background:#111b2a;border:1px solid rgba(130,240,184,.35);color:var(--text);border-radius:999px;padding:10px 14px;box-shadow:var(--shadow);z-index:70;transition:.18s opacity,.18s transform}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+    .step{position:relative;background:rgba(255,255,255,.045);border:1px solid var(--line);border-radius:22px;padding:18px;min-height:150px}
+    .step b{display:grid;place-items:center;width:34px;height:34px;border-radius:12px;background:linear-gradient(135deg,var(--cyan),var(--green));color:#071017;margin-bottom:12px}
+    .pricing{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+    .price{background:rgba(255,255,255,.045);border:1px solid var(--line);border-radius:24px;padding:20px}
+    .price .money{font-size:25px;font-weight:1000;color:var(--green);margin:10px 0}
+    .footer{padding:36px 0 54px;color:var(--muted);border-top:1px solid var(--line);margin-top:30px}
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.68);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
+    .modal.open{display:flex}
+    .modal-card{max-width:680px;width:100%;background:#0f1724;border:1px solid var(--line);border-radius:28px;padding:24px;box-shadow:var(--shadow)}
+    .modal-card h3{margin:0 0 8px;font-size:28px}
+    .small{font-size:13px;color:var(--muted)}
+    @media (max-width:900px){
+      .hero,.checker{grid-template-columns:1fr}.cards,.axis-grid,.timeline,.pricing,.report-blocks{grid-template-columns:1fr}.grid2,.checks{grid-template-columns:1fr}.risk-strip{grid-template-columns:1fr 1fr}.nav-links a:not(.keep){display:none}.hero{padding-top:46px} .total{align-items:flex-start;flex-direction:column}.total-num{font-size:52px}
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="#top" class="brand"><span class="brand-mark">B</span><span>BizFlow Check</span></a>
+      <div class="nav-links">
+        <a href="#why">定位</a>
+        <a href="#checker">免費健檢</a>
+        <a href="#method">流程</a>
+        <a href="#pricing">方案</a>
+        <a class="btn keep" href="#checker">開始健檢</a>
+      </div>
+    </div>
+  </nav>
+
+  <main id="top" class="wrap">
+    <section class="hero">
+      <div>
+        <span class="eyebrow">AI 自動化不是先衝，是先判斷能不能穩</span>
+        <h1>小公司 <span class="gradient">AI 業務與流程自動化</span> 健檢</h1>
+        <p class="lead">輸入公司網址與流程描述，快速看出客戶開發、內部流程、部署風險三件事：哪些值得自動化，哪些要先整理，哪些現在碰了會變維修地獄。</p>
+        <div class="hero-actions">
+          <a class="btn" href="#checker">免費跑一次健檢</a>
+          <a class="btn secondary" href="#method">看評分方式</a>
+        </div>
+        <div class="mini-note">
+          <span>✓ 不自動私訊</span>
+          <span>✓ 不抓自然人個資</span>
+          <span>✓ 先評估部署可行性</span>
+        </div>
+      </div>
+      <aside class="hero-card" aria-label="示範分數">
+        <div class="score-preview">
+          <div class="preview-top">
+            <div>
+              <span class="badge">Demo report</span>
+              <h2 style="margin:12px 0 6px">導入建議：先做流程健檢包</h2>
+              <p style="margin:0;color:var(--muted)">不要先做 CDP。先把 Google Sheet、表單、名單與追蹤流程穩住。</p>
+            </div>
+            <div class="score-big">72</div>
+          </div>
+          <div class="axis"><div class="axis-head"><span>BDS 業務開發成熟度</span><span>76</span></div><div class="bar"><span style="width:76%"></span></div></div>
+          <div class="axis"><div class="axis-head"><span>OPS 流程自動化度</span><span>68</span></div><div class="bar"><span style="width:68%"></span></div></div>
+          <div class="axis"><div class="axis-head"><span>DFS 部署可行性</span><span>61</span></div><div class="bar"><span style="width:61%;background:linear-gradient(90deg,var(--amber),var(--green))"></span></div></div>
+        </div>
+      </aside>
+    </section>
+
+    <section id="why">
+      <div class="section-head">
+        <h2>別人賣「幫你自動化」；這裡先判斷「該不該自動化」。</h2>
+        <p>小公司真正痛的不是 AI 不夠炫，是資料散、流程沒定、部署後沒人維護。這個健檢工具先把風險攤開，免得工具做完變成另一個手動工作。</p>
+      </div>
+      <div class="cards">
+        <div class="card"><h3>BDS｜業務開發成熟度</h3><p>看你的客戶來源、官方入口、詢問路徑、追蹤機制與名單管理是否清楚。</p></div>
+        <div class="card"><h3>OPS｜內部流程自動化度</h3><p>看表單、Excel、Google Sheet、SOP、報表與人工交接是否具備自動化條件。</p></div>
+        <div class="card"><h3>DFS｜部署可行性</h3><p>看能不能雲端化、是否需要登入第三方平台、是否涉及個資或 CDP 高風險操作。</p></div>
+      </div>
+    </section>
+
+    <section id="checker">
+      <div class="section-head">
+        <h2>免費健檢 Demo</h2>
+        <p>目前是前端規則式 MVP，可直接展示產品概念。下一版可接後端 API、資料庫、email capture 與正式報告。</p>
+      </div>
+      <div class="checker">
+        <form id="checkForm" class="form-panel">
+          <div class="grid2">
+            <div>
+              <label for="companyUrl">公司網址</label>
+              <input id="companyUrl" name="companyUrl" type="url" placeholder="https://example.com" required />
+            </div>
+            <div>
+              <label for="industry">產業</label>
+              <select id="industry" name="industry">
+                <option>室內設計 / 裝修 / 工程</option>
+                <option>房仲 / 業務團隊</option>
+                <option>補習班 / 教育品牌</option>
+                <option>診所 / 醫美 / 牙醫</option>
+                <option>小型品牌 / 電商</option>
+                <option>B2B 服務 / 顧問 / 貿易</option>
+                <option>其他小公司</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid2">
+            <div>
+              <label for="companyName">公司名稱（選填）</label>
+              <input id="companyName" name="companyName" placeholder="例：某某設計有限公司" />
+            </div>
+            <div>
+              <label for="budget">預算區間（選填）</label>
+              <select id="budget" name="budget">
+                <option value="">尚未決定</option>
+                <option value="audit">8,000–15,000 流程健檢</option>
+                <option value="tool">18,000–35,000 單流程小工具</option>
+                <option value="deploy">68,000 起 導入部署</option>
+                <option value="custom">120,000+ 客製整合</option>
+              </select>
+            </div>
+          </div>
+          <label for="processText">最想省下的流程</label>
+          <textarea id="processText" name="processText" placeholder="例：每天整理詢問名單、回覆報價、追蹤客戶狀態、每週產出報表、把表單資料貼到 Excel..." required></textarea>
+          <label>目前有用哪些工具？</label>
+          <div class="checks" id="tools">
+            <label class="check"><input type="checkbox" value="sheet">Google Sheet / Excel</label>
+            <label class="check"><input type="checkbox" value="form">表單 / 問卷</label>
+            <label class="check"><input type="checkbox" value="crm">CRM / 客戶管理</label>
+            <label class="check"><input type="checkbox" value="notion">Notion / Airtable</label>
+            <label class="check"><input type="checkbox" value="mail">Gmail / Email</label>
+            <label class="check"><input type="checkbox" value="line">LINE OA / 官方帳號</label>
+          </div>
+          <label>部署風險條件</label>
+          <div class="checks" id="risks">
+            <label class="check"><input type="checkbox" value="login">需要登入第三方平台</label>
+            <label class="check"><input type="checkbox" value="cdp">需要瀏覽器自動點擊 / CDP</label>
+            <label class="check"><input type="checkbox" value="personal">涉及自然人個資</label>
+            <label class="check"><input type="checkbox" value="send">需要自動寄信 / 私訊 / 發送</label>
+            <label class="check"><input type="checkbox" value="nosop">沒有固定 SOP</label>
+            <label class="check"><input type="checkbox" value="messy">資料格式很亂</label>
+          </div>
+          <div class="grid2">
+            <div>
+              <label for="scale">公司規模</label>
+              <select id="scale" name="scale">
+                <option value="micro">1–5 人</option>
+                <option value="small">6–20 人</option>
+                <option value="mid">21–50 人</option>
+                <option value="team">50 人以上</option>
+              </select>
+            </div>
+            <div>
+              <label for="contact">聯絡方式（選填）</label>
+              <input id="contact" name="contact" placeholder="email / LINE OA / 電話" />
+            </div>
+          </div>
+          <label class="check" style="margin-top:12px"><input type="checkbox" id="appointment" value="yes"> 願意預約 30 分鐘流程診斷</label>
+          <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn" type="submit">產生健檢結果</button>
+            <button class="btn secondary" type="button" id="fillDemo">填入示範資料</button>
+            <button class="btn secondary" type="button" id="resetForm">清空重填</button>
+          </div>
+          <p class="small">聲明：本 Demo 不送出資料、不執行外部發送、不自動登入任何平台。正式版應保留來源、同意與刪除機制。</p>
+        </form>
+
+        <aside class="result-panel">
+          <div id="loading" class="loading">
+            <strong class="dots" id="loadingMain">建立流程健檢框架</strong>
+            <div id="loadingSub" class="small">解析輸入條件、工具現況與部署風險</div>
+          </div>
+          <div id="empty" class="result-empty">
+            <h3 style="margin-top:0">結果會出現在這裡</h3>
+            <p>跑完會得到三軸分數、部署等級、優先建議與適合銷售的導入方案。</p>
+          </div>
+          <div id="result" class="result"></div>
+          <div id="leadPreview" class="lead-preview" style="display:none"></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="method">
+      <div class="section-head">
+        <h2>第一版工作流</h2>
+        <p>固定模板先跑通，不急著做拖拉式 workflow builder。先讓客戶看懂，讓包子能接案。</p>
+      </div>
+      <div class="timeline">
+        <div class="step"><b>1</b><h3>輸入</h3><p>公司網址、產業、流程描述、目前工具、風險條件。</p></div>
+        <div class="step"><b>2</b><h3>規則評分</h3><p>BDS / OPS / DFS 先用規則式計分，避免 AI 胡判核心風險。</p></div>
+        <div class="step"><b>3</b><h3>報告生成</h3><p>AI 只做摘要與產業化措辭，分數與紅線由規則控制。</p></div>
+        <div class="step"><b>4</b><h3>人審轉換</h3><p>高意圖 lead 進 review queue，再轉流程健檢、部署或導入包。</p></div>
+      </div>
+    </section>
+
+    <section id="pricing">
+      <div class="section-head">
+        <h2>商業轉換方案</h2>
+        <p>免費工具不是做功德，是讓需求自己浮上來。低風險標準化，高風險客製報價。</p>
+      </div>
+      <div class="pricing">
+        <div class="price"><span class="badge">Lead magnet</span><h3>免費健檢</h3><div class="money">$0</div><p>三軸分數、Top 3 建議、部署等級。</p></div>
+        <div class="price"><span class="badge">入口商品</span><h3>流程健檢包</h3><div class="money">8,000–15,000</div><p>完整流程盤點、優先順序、導入路線圖。</p></div>
+        <div class="price"><span class="badge">主力交付</span><h3>工具部署包</h3><div class="money">68,000 起</div><p>Sheet / 表單 / 報表 / review queue / SOP。</p></div>
+        <div class="price"><span class="badge">高風險客製</span><h3>CDP / 本機腳本</h3><div class="money">50,000 起</div><p>自動登入、瀏覽器操作、平台 UI 自動化另評估。</p></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <strong>BizFlow Check</strong>
+      <p>定位：幫小公司把客戶開發與內部重複流程，做成可執行的 AI / 自動化工具。邊界：不自動私訊、不做人肉反查、不把 CDP 當 SaaS 核心。</p>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast">已完成</div>
+
+  <div class="modal" id="detailModal" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <h3 id="modalTitle">詳細建議</h3>
+      <p id="modalText"></p>
+      <button class="btn secondary" id="closeModal">關閉</button>
+    </div>
+  </div>
+
+<script>
+const stages = [
+  ['建立流程健檢框架','解析輸入條件、工具現況與部署風險'],
+  ['檢查業務開發入口','判斷客戶來源、詢問路徑與追蹤機制'],
+  ['判斷內部流程條件','檢查 Sheet、表單、SOP、報表與人工交接'],
+  ['評估部署風險','標記登入依賴、CDP、個資與外部發送風險'],
+  ['整理導入建議','產生分數、優先順序與商業 CTA']
+];
+const metricNames = {
+  bds:['客戶來源清楚度','官方聯絡入口','服務方案清楚度','追蹤流程','名單管理','內容到詢問路徑'],
+  ops:['表單/Sheet 結構','重複任務明確度','SOP 清楚度','資料格式一致性','報表週期','人工交接次數'],
+  dfs:['雲端可完成度','CSV/Sheet 可用度','官方 API/工具整合','登入依賴風險','CDP 依賴風險','個資/發送風險']
+};
+function checkedValues(rootId){return Array.from(document.querySelectorAll('#'+rootId+' input:checked')).map(x=>x.value)}
+function clamp(n){return Math.max(0,Math.min(100,Math.round(n)))}
+function riskLabel(level){return ['Level 0 純雲端','Level 1 CSV/Sheet','Level 2 API 串接','Level 3 本機腳本','Level 4 CDP/自動登入'][level]}
+function grade(score){if(score>=82)return ['可快速導入','good']; if(score>=68)return ['先整理再導入','mid']; if(score>=52)return ['需要流程盤點','mid']; return ['高風險，不建議直接自動化','high']}
+function score(data){
+  const tools = data.tools, risks = data.risks, text = data.text.toLowerCase();
+  let bds = 48, ops = 44, dfs = 72;
+  if(data.url) bds += 8;
+  if(tools.includes('crm')) bds += 12;
+  if(tools.includes('sheet')) {bds += 7; ops += 13; dfs += 7;}
+  if(tools.includes('form')) {ops += 12; dfs += 8;}
+  if(tools.includes('notion')) {ops += 8; dfs += 5;}
+  if(tools.includes('line') || tools.includes('mail')) bds += 8;
+  if(/名單|客戶|詢問|報價|追蹤|lead|業務|開發/.test(text)) bds += 12;
+  if(/報表|excel|sheet|表單|整理|複製|貼上|每天|每週|固定|sop/.test(text)) ops += 16;
+  if(/自動寄|私訊|群發|留言|登入|後台|爬|抓/.test(text)) dfs -= 10;
+  if(data.scale === 'small') {ops += 4; bds += 3;}
+  if(data.scale === 'mid' || data.scale === 'team') {ops += 8; bds += 7; dfs -= 3;}
+  if(risks.includes('login')) dfs -= 13;
+  if(risks.includes('cdp')) dfs -= 22;
+  if(risks.includes('personal')) dfs -= 20;
+  if(risks.includes('send')) dfs -= 17;
+  if(risks.includes('nosop')) {ops -= 14; dfs -= 8;}
+  if(risks.includes('messy')) {ops -= 16; dfs -= 10;}
+  bds = clamp(bds); ops = clamp(ops); dfs = clamp(dfs);
+  const total = clamp(bds*.34 + ops*.33 + dfs*.33);
+  let level = 0;
+  if(risks.includes('cdp') || (risks.includes('login') && risks.includes('send'))) level = 4;
+  else if(risks.includes('login') || risks.includes('personal')) level = 3;
+  else if(tools.includes('notion') || tools.includes('line') || tools.includes('mail')) level = 2;
+  else if(tools.includes('sheet') || tools.includes('form')) level = 1;
+  return {bds,ops,dfs,total,level};
+}
+function metricScores(axisScore, axis, risks, tools){
+  return metricNames[axis].map((name,i)=>{
+    let s = axisScore + (i-2)*3;
+    if(axis==='dfs' && i>=3 && risks.length) s -= 8;
+    if(axis==='ops' && i===0 && tools.includes('sheet')) s += 8;
+    return [name, clamp(s)];
+  });
+}
+function recommendations(data, s){
+  const rec=[];
+  if(s.dfs < 65) rec.push(['high','先做部署風險切割','把自動登入、CDP、自動發送拆成客製項，不放進標準 MVP。']);
+  if(data.risks.includes('personal')) rec.push(['high','個資紅線要前置','只處理公司/品牌/店家層級公開資訊；自然人資料、私人 LINE/FB/IG 不進系統。']);
+  if(data.risks.includes('messy') || data.risks.includes('nosop')) rec.push(['mid','先整理流程再自動化','用一張 Google Sheet 定義欄位、狀態、負責人與下一步，否則工具會吃髒資料。']);
+  if(!data.tools.includes('sheet') && !data.tools.includes('form')) rec.push(['mid','先上低風險資料入口','第一步建議用表單 + Google Sheet，不要直接串第三方後台。']);
+  if(s.bds >= 70) rec.push(['good','業務開發可以先做半自動','適合做名單整理、lead 評分、開場文案草稿與 review queue。']);
+  if(s.ops >= 70) rec.push(['good','內部流程有自動化條件','可先做週報、表單整理、狀態提醒、SOP 輸出。']);
+  if(rec.length < 3) rec.push(['mid','建議預約流程盤點','目前資訊不足，適合用 30–60 分鐘訪談補齊資料流與交接點。']);
+  return rec.slice(0,5);
+}
+function offer(s){
+  if(s.level>=4 || s.dfs<55) return ['高風險客製評估','先不要賣標準 SaaS。需人工盤點帳號、平台限制、維護責任，CDP/自動登入 50,000 起。'];
+  if(s.total>=76 && s.dfs>=70) return ['工具部署包','條件不錯，可進入 Google Sheet / 表單 / 報表 / review queue 部署，建議 68,000 起。'];
+  return ['流程健檢包','先做完整流程盤點、資料欄位、SOP 與導入路線圖，建議 8,000–15,000。'];
+}
+function riskTags(data){
+  const labels={login:'登入依賴',cdp:'CDP/瀏覽器操作',personal:'自然人個資',send:'外部自動發送',nosop:'SOP 不明',messy:'資料格式髒亂'};
+  return data.risks.map(r=>labels[r]||r);
+}
+function automationLists(data, s){
+  const can=[];
+  const avoid=[];
+  if(data.tools.includes('sheet') || data.tools.includes('form')) can.push('表單 / Google Sheet 資料整理與欄位標準化');
+  if(s.bds>=65) can.push('公司層級名單整理、lead 評分、開場文案草稿與人工 review queue');
+  if(s.ops>=65) can.push('週報、狀態提醒、成交/未成交原因彙整與 SOP 輸出');
+  if(data.tools.includes('mail') || data.tools.includes('line')) can.push('Email / LINE OA 的模板草稿與人工審核後複製使用');
+  if(can.length===0) can.push('先做流程盤點與資料欄位定義，再決定工具導入順序');
+  if(data.risks.includes('personal')) avoid.push('自然人個資蒐集、私人 LINE/FB/IG 反查與大量個資拼接');
+  if(data.risks.includes('send')) avoid.push('未經人工審核的自動寄信、私訊、留言或群發');
+  if(data.risks.includes('cdp')) avoid.push('把 CDP/自動登入當標準 SaaS 功能，應列高風險客製');
+  if(data.risks.includes('messy') || data.risks.includes('nosop')) avoid.push('在資料格式與 SOP 未定前直接做全自動流程');
+  if(avoid.length===0) avoid.push('目前未見明顯紅線，但仍建議保留人工審核與來源紀錄');
+  return {can, avoid};
+}
+function leadSummary(data, s){
+  const [offerTitle]=offer(s);
+  const tags=riskTags(data);
+  return {
+    companyUrl:data.url,
+    industry:data.industry,
+    scale:data.scale,
+    companyName:data.companyName || '',
+    contact:data.contact || '',
+    budget:data.budget || '',
+    appointment:!!data.appointment,
+    scores:{bds:s.bds,ops:s.ops,dfs:s.dfs,total:s.total},
+    deploymentLevel:riskLabel(s.level),
+    recommendedOffer:offerTitle,
+    riskTags:tags,
+    tools:data.tools,
+    risks:data.risks,
+    processText:data.text,
+    createdAt:new Date().toISOString()
+  };
+}
+function axisCard(title, scoreVal, axis, data){
+  const list = metricScores(scoreVal, axis, data.risks, data.tools).map(([n,v])=>`<div class="metric"><span>${n}</span><strong>${v}</strong></div>`).join('');
+  return `<div class="axis"><div class="axis-head"><span>${title}</span><span>${scoreVal}</span></div><div class="bar"><span style="width:${scoreVal}%;${scoreVal<60?'background:linear-gradient(90deg,var(--red),var(--amber))':''}"></span></div><div class="metric-list">${list}</div></div>`;
+}
+function render(data, s){
+  const [gText,gClass]=grade(s.total);
+  const [offerTitle,offerText]=offer(s);
+  const lists=automationLists(data,s);
+  const riskLevels = [0,1,2,3,4].map(i=>`<div class="risk-level ${i===s.level?'active':''}">${riskLabel(i)}</div>`).join('');
+  const recs = recommendations(data,s).map(([cls,t,b])=>`<div class="rec ${cls}"><strong>${t}</strong><span>${b}</span></div>`).join('');
+  const canItems=lists.can.map(x=>`<li>${x}</li>`).join('');
+  const avoidItems=lists.avoid.map(x=>`<li>${x}</li>`).join('');
+  const tags=riskTags(data).map(x=>`<span class="pill">${x}</span>`).join('') || '<span class="pill">低風險</span>';
+  document.getElementById('result').innerHTML = `
+    <div class="total">
+      <div><span class="badge">${gText}</span><h2 style="margin:10px 0 0">${data.industry}</h2><p style="margin:5px 0 0;color:var(--muted)">${data.url}</p></div>
+      <div class="total-num">${s.total}</div>
+    </div>
+    <div class="risk-strip">${riskLevels}</div>
+    <div class="axis-grid">
+      ${axisCard('BDS 業務開發成熟度',s.bds,'bds',data)}
+      ${axisCard('OPS 流程自動化度',s.ops,'ops',data)}
+      ${axisCard('DFS 部署可行性',s.dfs,'dfs',data)}
+    </div>
+    <div class="recommendations"><h3>優先建議</h3>${recs}</div>
+    <div class="report-blocks">
+      <div class="report-block"><h3>適合先自動化</h3><ul>${canItems}</ul></div>
+      <div class="report-block"><h3>不建議直接自動化</h3><ul>${avoidItems}</ul></div>
+    </div>
+    <div class="offer"><span class="badge">建議 CTA</span><h3 style="margin:10px 0 6px">${offerTitle}</h3><p style="margin:0;color:var(--soft)">${offerText}</p><div class="pill-row"><span class="pill">人工審核</span><span class="pill">保留來源</span><span class="pill">先匯出/複製，不自動發送</span>${tags}</div></div>
+    <div id="aiReport" class="ai-report"><h3>AI 顧問摘要</h3><p>正在產生產業化摘要；若尚未部署 API，會維持規則式報告。</p><div class="ai-status">規則式分數仍是判斷來源，AI 只做說法潤飾。</div></div>
+    <div class="report-actions"><button class="btn" type="button" onclick="openDetail('預約流程盤點','正式版這裡可接 Calendly、Google Form 或 LINE OA。先收需求，不急著做金流。')">預約流程盤點</button><button class="btn secondary" type="button" onclick="openDetail('完整報告','正式版可要求 email，寄出完整 PDF / HTML 報告，並同步進 review queue。')">留下聯絡方式拿完整報告</button><button class="btn secondary" type="button" id="copyReport">複製報告</button><button class="btn secondary" type="button" id="downloadJson">匯出 JSON</button><button class="btn secondary" type="button" id="printReport">列印 / 存 PDF</button></div>
+  `;
+  bindReportActions(data,s);
+  renderLeadPreview(data,s);
+  enrichWithAI(data,s);
+}
+let lastAssessment=null;
+function showToast(text){const t=document.getElementById('toast');t.textContent=text;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}
+function plainReport(data,s){
+  const [offerTitle,offerText]=offer(s);
+  const lists=automationLists(data,s);
+  const recs=recommendations(data,s).map(([_,t,b])=>`- ${t}：${b}`).join('\n');
+  return `# BizFlow Check 健檢報告\n\n公司名稱：${data.companyName || '未填'}\n公司網址：${data.url}\n產業：${data.industry}\n聯絡方式：${data.contact || '未填'}\n預算區間：${data.budget || '未填'}\n預約意願：${data.appointment ? '願意' : '未勾選'}\n部署等級：${riskLabel(s.level)}\n總分：${s.total}\nBDS：${s.bds} / OPS：${s.ops} / DFS：${s.dfs}\n\n## 流程描述\n${data.text}\n\n## 優先建議\n${recs}\n\n## 適合先自動化\n${lists.can.map(x=>'- '+x).join('\n')}\n\n## 不建議直接自動化\n${lists.avoid.map(x=>'- '+x).join('\n')}\n\n## 建議 CTA\n${offerTitle}：${offerText}\n\n合規邊界：不自動私訊、不抓自然人個資、不做人肉反查；外部發送需人工審核。`;
+}
+function saveLocalLead(data,s){
+  try{
+    const item=leadSummary(data,s);
+    const list=JSON.parse(localStorage.getItem('bizflow_leads')||'[]');
+    list.unshift(item);
+    localStorage.setItem('bizflow_leads',JSON.stringify(list.slice(0,20)));
+  }catch(e){console.warn('local lead save skipped',e)}
+}
+async function copyReport(){
+  if(!lastAssessment) return;
+  const text=plainReport(lastAssessment.data,lastAssessment.score);
+  try{await navigator.clipboard.writeText(text);showToast('已複製 Markdown 報告');}
+  catch(e){openDetail('複製報告',text)}
+}
+function downloadJson(){
+  if(!lastAssessment) return;
+  const blob=new Blob([JSON.stringify(leadSummary(lastAssessment.data,lastAssessment.score),null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bizflow-check-result.json';a.click();URL.revokeObjectURL(a.href);showToast('已匯出 JSON');
+}
+function bindReportActions(data,s){
+  lastAssessment={data,score:s};
+  document.getElementById('copyReport').onclick=copyReport;
+  document.getElementById('downloadJson').onclick=downloadJson;
+  document.getElementById('printReport').onclick=()=>window.print();
+  saveLocalLead(data,s);
+}
+function renderLeadPreview(data,s){
+  const box=document.getElementById('leadPreview');
+  const summary=leadSummary(data,s);
+  box.style.display='block';
+  box.innerHTML=`<strong>本機 lead preview</strong><br>建議方案：${summary.recommendedOffer}｜部署：${summary.deploymentLevel}｜聯絡：${summary.contact || '未填'}｜預約：${summary.appointment ? '願意' : '未勾選'}<br><span class="small">目前只存在瀏覽器 localStorage，未送出到任何伺服器。</span>`;
+}
+function escapeHtml(str){return String(str||'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+function fallbackAI(data,s){
+  const [offerTitle]=offer(s);
+  const steps=automationLists(data,s).can.slice(0,3);
+  return {
+    mode:'local',
+    summary:`${data.industry} 目前適合先從資料欄位、表單與追蹤流程開始，不建議一開始就做高風險自動登入或外部發送。依目前分數，建議先用 ${offerTitle} 轉成可交付的流程盤點或部署專案。`,
+    nextSteps:steps,
+    salesCopy:data.appointment ? '你已勾選預約意願，下一步適合安排 30 分鐘流程診斷。' : '留下聯絡方式拿完整報告，再安排 30 分鐘流程診斷。',
+    caution:'規則式紅線仍優先：不自動私訊、不抓自然人個資、不把 CDP 當標準 SaaS。'
+  };
+}
+function renderAIReport(payload){
+  const box=document.getElementById('aiReport');
+  if(!box) return;
+  const steps=(payload.nextSteps||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('');
+  const modeLabel=payload.mode==='ai'?'AI API 已啟用':'本機 fallback';
+  box.innerHTML=`<h3>AI 顧問摘要</h3><p>${escapeHtml(payload.summary)}</p>${steps?`<ul>${steps}</ul>`:''}<p><strong>${escapeHtml(payload.salesCopy)}</strong></p><div class="ai-status">${modeLabel}｜${escapeHtml(payload.caution)}</div>`;
+}
+async function enrichWithAI(data,s){
+  const fallback=fallbackAI(data,s);
+  if(location.protocol==='file:'){renderAIReport(fallback);return;}
+  try{
+    const res=await fetch('/api/generate-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({data,score:s,ruleReport:plainReport(data,s)})});
+    const payload=await res.json();
+    renderAIReport({...fallback,...payload});
+  }catch(e){console.warn('AI report fallback',e);renderAIReport(fallback)}
+}
+function openDetail(title,text){document.getElementById('modalTitle').textContent=title;document.getElementById('modalText').textContent=text;document.getElementById('detailModal').classList.add('open')}
+document.getElementById('closeModal').onclick=()=>document.getElementById('detailModal').classList.remove('open');
+document.getElementById('detailModal').addEventListener('click',e=>{if(e.target.id==='detailModal')e.currentTarget.classList.remove('open')});
+document.getElementById('fillDemo').onclick=()=>{
+  document.getElementById('companyUrl').value='https://example-interior.com';
+  document.getElementById('industry').value='室內設計 / 裝修 / 工程';
+  document.getElementById('companyName').value='示範室內設計公司';
+  document.getElementById('budget').value='deploy';
+  document.getElementById('processText').value='每天整理官網與 LINE 詢問名單，複製到 Google Sheet，追蹤是否報價、是否回覆、每週整理成交與未成交原因。';
+  document.getElementById('contact').value='demo@example.com';
+  document.getElementById('appointment').checked=true;
+  document.querySelectorAll('#tools input').forEach(x=>x.checked=['sheet','form','mail','line'].includes(x.value));
+  document.querySelectorAll('#risks input').forEach(x=>x.checked=['nosop'].includes(x.value));
+};
+document.getElementById('resetForm').onclick=()=>{
+  document.getElementById('checkForm').reset();
+  document.getElementById('result').classList.remove('active');
+  document.getElementById('result').innerHTML='';
+  document.getElementById('empty').style.display='block';
+  document.getElementById('leadPreview').style.display='none';
+  lastAssessment=null;
+  showToast('已清空，可重新健檢');
+};
+document.getElementById('checkForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const data={
+    url:document.getElementById('companyUrl').value.trim(),
+    industry:document.getElementById('industry').value,
+    companyName:document.getElementById('companyName').value.trim(),
+    budget:document.getElementById('budget').value,
+    text:document.getElementById('processText').value.trim(),
+    tools:checkedValues('tools'),
+    risks:checkedValues('risks'),
+    scale:document.getElementById('scale').value,
+    contact:document.getElementById('contact').value.trim(),
+    appointment:document.getElementById('appointment').checked
+  };
+  const loading=document.getElementById('loading'), empty=document.getElementById('empty'), result=document.getElementById('result');
+  empty.style.display='none'; result.classList.remove('active'); loading.classList.add('active');
+  let i=0;
+  const tick=()=>{document.getElementById('loadingMain').textContent=stages[i][0];document.getElementById('loadingSub').textContent=stages[i][1];i=Math.min(i+1,stages.length-1)};
+  tick(); const timer=setInterval(tick,520);
+  setTimeout(()=>{clearInterval(timer); loading.classList.remove('active'); render(data, score(data)); result.classList.add('active'); result.scrollIntoView({behavior:'smooth',block:'nearest'});},2700);
+});
+</script>
+</body>
+</html>
